@@ -3,7 +3,7 @@ import numpy as np
 import h5py
 import json
 import torch
-from scipy.misc import imread, imresize
+from scipy import misc
 from tqdm import tqdm
 from collections import Counter
 from random import seed, choice, sample
@@ -13,7 +13,6 @@ def create_input_files(dataset, karpathy_json_path, image_folder, captions_per_i
                        max_len=100):
     """
     Creates input files for training, validation, and test data.
-
     :param dataset: name of dataset, one of 'coco', 'flickr8k', 'flickr30k'
     :param karpathy_json_path: path of Karpathy JSON file with splits and captions
     :param image_folder: folder with downloaded images
@@ -28,6 +27,8 @@ def create_input_files(dataset, karpathy_json_path, image_folder, captions_per_i
     # Read Karpathy JSON
     with open(karpathy_json_path, 'r') as j:
         data = json.load(j)
+
+    #     print(list(data.items())[:10])
 
     # Read image paths and captions for each image
     train_image_paths = []
@@ -66,6 +67,8 @@ def create_input_files(dataset, karpathy_json_path, image_folder, captions_per_i
     assert len(train_image_paths) == len(train_image_captions)
     assert len(val_image_paths) == len(val_image_captions)
     assert len(test_image_paths) == len(test_image_captions)
+
+    print(f'train {len(train_image_paths)}, val {len(val_image_paths)}, test {len(test_image_paths)}, ')
 
     # Create word map
     words = [w for w in word_freq.keys() if word_freq[w] > min_word_freq]
@@ -112,11 +115,11 @@ def create_input_files(dataset, karpathy_json_path, image_folder, captions_per_i
                 assert len(captions) == captions_per_image
 
                 # Read images
-                img = imread(impaths[i])
+                img = misc.imread(impaths[i])
                 if len(img.shape) == 2:
                     img = img[:, :, np.newaxis]
                     img = np.concatenate([img, img, img], axis=2)
-                img = imresize(img, (256, 256))
+                img = misc.imresize(img, (256, 256))
                 img = img.transpose(2, 0, 1)
                 assert img.shape == (3, 256, 256)
                 assert np.max(img) <= 255
@@ -149,7 +152,6 @@ def create_input_files(dataset, karpathy_json_path, image_folder, captions_per_i
 def init_embedding(embeddings):
     """
     Fills embedding tensor with values from the uniform distribution.
-
     :param embeddings: embedding tensor
     """
     bias = np.sqrt(3.0 / embeddings.size(1))
@@ -159,7 +161,6 @@ def init_embedding(embeddings):
 def load_embeddings(emb_file, word_map):
     """
     Creates an embedding tensor for the specified word map, for loading into the model.
-
     :param emb_file: file containing embeddings (stored in GloVe format)
     :param word_map: word map
     :return: embeddings in the same order as the words in the word map, dimension of embeddings
@@ -195,7 +196,6 @@ def load_embeddings(emb_file, word_map):
 def clip_gradient(optimizer, grad_clip):
     """
     Clips gradients computed during backpropagation to avoid explosion of gradients.
-
     :param optimizer: optimizer with the gradients to be clipped
     :param grad_clip: clip value
     """
@@ -209,7 +209,6 @@ def save_checkpoint(data_name, epoch, epochs_since_improvement, encoder, decoder
                     bleu4, is_best):
     """
     Saves model checkpoint.
-
     :param data_name: base name of processed dataset
     :param epoch: epoch number
     :param epochs_since_improvement: number of epochs since last improvement in BLEU-4 score
@@ -258,7 +257,6 @@ class AverageMeter(object):
 def adjust_learning_rate(optimizer, shrink_factor):
     """
     Shrinks learning rate by a specified factor.
-
     :param optimizer: optimizer whose learning rate must be shrunk.
     :param shrink_factor: factor in interval (0, 1) to multiply learning rate with.
     """
@@ -272,7 +270,6 @@ def adjust_learning_rate(optimizer, shrink_factor):
 def accuracy(scores, targets, k):
     """
     Computes top-k accuracy, from predicted and true labels.
-
     :param scores: scores from the model
     :param targets: true labels
     :param k: k in top-k accuracy
